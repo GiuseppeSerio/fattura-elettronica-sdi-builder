@@ -1,6 +1,6 @@
 import type { DettaglioLinee, ScontoMaggiorazione } from '../../../types/index.js';
 import type { FieldError } from '../../../errors/index.js';
-import { required, maxLength, dateFormat, percentuale, enumValue } from '../types.js';
+import { required, maxLength, dateFormat, percentuale, numericField, enumValue } from '../types.js';
 import { TIPO_CESSIONE_PRESTAZIONE, NATURA_DEPRECATA } from '../enums.js';
 
 const PRICE_TOLERANCE = 0.01; // ±1 centesimo (SDI 00423)
@@ -32,6 +32,8 @@ function validateScontoMaggiorazione(sm: ScontoMaggiorazione, path: string): Fie
     errors.push({ field: path, code: 'MISSING_REQUIRED_FIELD', message: 'Obbligatorio: Percentuale oppure Importo' });
   }
   errors.push(...percentuale(sm.Percentuale, `${path}.Percentuale`));
+  errors.push(...numericField(sm.Percentuale, 6, 2, `${path}.Percentuale`));
+  errors.push(...numericField(sm.Importo, 15, 8, `${path}.Importo`));
   return errors;
 }
 
@@ -60,6 +62,7 @@ function validateSingolaLinea(linea: DettaglioLinee, path: string): FieldError[]
   if (linea.Quantita !== undefined && linea.Quantita === 0) {
     errors.push({ field: `${path}.Quantita`, code: 'INVALID_VALUE', message: 'Quantita non può essere 0' });
   }
+  errors.push(...numericField(linea.Quantita, 21, 8, `${path}.Quantita`));
   errors.push(...maxLength(linea.UnitaMisura, 10, `${path}.UnitaMisura`));
 
   errors.push(...dateFormat(linea.DataInizioPeriodo, `${path}.DataInizioPeriodo`));
@@ -68,11 +71,18 @@ function validateSingolaLinea(linea: DettaglioLinee, path: string): FieldError[]
     errors.push({ field: `${path}.DataFinePeriodo`, code: 'INVALID_VALUE', message: 'DataFinePeriodo non può essere precedente a DataInizioPeriodo' });
   }
 
-  if (linea.PrezzoUnitario === undefined) errors.push({ field: `${path}.PrezzoUnitario`, code: 'MISSING_REQUIRED_FIELD', message: 'Campo obbligatorio' });
+  if (linea.PrezzoUnitario === undefined) {
+    errors.push({ field: `${path}.PrezzoUnitario`, code: 'MISSING_REQUIRED_FIELD', message: 'Campo obbligatorio' });
+  } else {
+    errors.push(...numericField(linea.PrezzoUnitario, 21, 8, `${path}.PrezzoUnitario`));
+  }
 
   if (linea.PrezzoTotale === undefined) {
     errors.push({ field: `${path}.PrezzoTotale`, code: 'MISSING_REQUIRED_FIELD', message: 'Campo obbligatorio' });
-  } else if (linea.PrezzoUnitario !== undefined && linea.Quantita !== undefined) {
+  } else {
+    errors.push(...numericField(linea.PrezzoTotale, 21, 8, `${path}.PrezzoTotale`));
+  }
+  if (linea.PrezzoTotale !== undefined && linea.PrezzoUnitario !== undefined && linea.Quantita !== undefined) {
     const atteso = calcolaPrezzoTotaleAtteso(linea);
     if (atteso !== undefined && Math.abs(linea.PrezzoTotale - atteso) > PRICE_TOLERANCE) {
       errors.push({
@@ -90,6 +100,7 @@ function validateSingolaLinea(linea: DettaglioLinee, path: string): FieldError[]
   } else if (linea.AliquotaIVA === 0 && !linea.Natura) {
     errors.push({ field: `${path}.Natura`, code: 'MISSING_NATURA', message: 'Natura obbligatoria quando AliquotaIVA è 0' });
   }
+  errors.push(...numericField(linea.AliquotaIVA, 6, 2, `${path}.AliquotaIVA`));
 
   // Natura presente → AliquotaIVA deve essere 0 (SDI 00401)
   if (linea.Natura !== undefined && linea.AliquotaIVA !== undefined && linea.AliquotaIVA !== 0) {

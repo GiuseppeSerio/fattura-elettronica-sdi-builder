@@ -1,6 +1,6 @@
 import type { DatiPagamento } from '../../../types/index.js';
 import type { FieldError } from '../../../errors/index.js';
-import { required, maxLength, dateFormat, iban, bic, pattern, enumValue } from '../types.js';
+import { required, maxLength, dateFormat, iban, bic, pattern, numericField, enumValue } from '../types.js';
 import { MODALITA_PAGAMENTO, CONDIZIONI_PAGAMENTO } from '../enums.js';
 
 /** ABI e CAB: esattamente 5 cifre */
@@ -29,6 +29,9 @@ export function validateDatiPagamento(dp: DatiPagamento, path: string): FieldErr
     } else if (det.ImportoPagamento <= 0) {
       errors.push({ field: `${p}.ImportoPagamento`, code: 'INVALID_VALUE', message: 'ImportoPagamento deve essere maggiore di 0' });
     }
+    errors.push(...numericField(det.ImportoPagamento, 15, 2, `${p}.ImportoPagamento`));
+    errors.push(...numericField(det.ScontoPagamentoAnticipato, 15, 2, `${p}.ScontoPagamentoAnticipato`));
+    errors.push(...numericField(det.PenalitaPagamentiRitardati, 15, 2, `${p}.PenalitaPagamentiRitardati`));
 
     errors.push(...maxLength(det.Beneficiario, 200, `${p}.Beneficiario`));
     errors.push(...dateFormat(det.DataRiferimentoTerminiPagamento, `${p}.DataRiferimentoTerminiPagamento`));

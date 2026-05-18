@@ -1,6 +1,6 @@
 import type { DatiRiepilogo } from '../../../types/index.js';
 import type { FieldError } from '../../../errors/index.js';
-import { maxLength } from '../types.js';
+import { maxLength, numericField } from '../types.js';
 import { NATURA_DEPRECATA } from '../enums.js';
 
 const TOLERANCE = 0.01; // tolleranza arrotondamento
@@ -17,8 +17,13 @@ function validateSingoloRiepilogo(r: DatiRiepilogo, path: string): FieldError[] 
   const errors: FieldError[] = [];
 
   if (r.AliquotaIVA === undefined)       errors.push({ field: `${path}.AliquotaIVA`,       code: 'MISSING_REQUIRED_FIELD', message: 'Campo obbligatorio' });
+  errors.push(...numericField(r.AliquotaIVA, 6, 2, `${path}.AliquotaIVA`));
   if (r.ImponibileImporto === undefined)  errors.push({ field: `${path}.ImponibileImporto`, code: 'MISSING_REQUIRED_FIELD', message: 'Campo obbligatorio' });
+  errors.push(...numericField(r.ImponibileImporto, 15, 2, `${path}.ImponibileImporto`));
   if (r.Imposta === undefined)            errors.push({ field: `${path}.Imposta`,           code: 'MISSING_REQUIRED_FIELD', message: 'Campo obbligatorio' });
+  errors.push(...numericField(r.Imposta, 15, 2, `${path}.Imposta`));
+  errors.push(...numericField(r.SpeseAccessorie, 15, 8, `${path}.SpeseAccessorie`));
+  errors.push(...numericField(r.Arrotondamento, 21, 8, `${path}.Arrotondamento`));
 
   if (r.AliquotaIVA === 0 && !r.Natura) {
     errors.push({ field: `${path}.Natura`, code: 'MISSING_NATURA', message: 'Natura obbligatoria quando AliquotaIVA è 0' });

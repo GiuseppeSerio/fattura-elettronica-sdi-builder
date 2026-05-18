@@ -143,6 +143,50 @@ export function percentuale(value: number | undefined, field: string): FieldErro
   return [];
 }
 
+/**
+ * Valida un campo numerico decimale FatturaPA.
+ * Controlla sia le cifre decimali sia la lunghezza totale del valore
+ * come verrebbe serializzato in XML (almeno 2 cifre decimali, separatore ".").
+ */
+export function numericField(
+  value: number | undefined,
+  maxChars: number,
+  maxDecimals: number,
+  field: string,
+): FieldError[] {
+  if (value === undefined) return [];
+  const errors: FieldError[] = [];
+  const s = String(Math.abs(value));
+
+  if (s.includes('e') || s.includes('E')) {
+    errors.push({ field, code: 'INVALID_FORMAT', message: 'Valore non valido (notazione scientifica non ammessa)' });
+    return errors;
+  }
+
+  const dotIdx = s.indexOf('.');
+  const decCount = dotIdx === -1 ? 0 : s.length - dotIdx - 1;
+
+  if (decCount > maxDecimals) {
+    errors.push({ field, code: 'INVALID_FORMAT', message: `Massimo ${maxDecimals} cifre decimali` });
+  }
+
+  // Lunghezza XML: segno (se negativo) + parte intera + '.' + max(2, decEffettive)
+  const intLen = dotIdx === -1 ? s.length : dotIdx;
+  const decFormatted = Math.max(2, Math.min(decCount, maxDecimals));
+  const signLen = value < 0 ? 1 : 0;
+  const totalLen = signLen + intLen + 1 + decFormatted;
+
+  if (totalLen > maxChars) {
+    errors.push({
+      field,
+      code: 'INVALID_FORMAT',
+      message: `Valore eccede ${maxChars} caratteri nella rappresentazione XML (occupa ${totalLen})`,
+    });
+  }
+
+  return errors;
+}
+
 /** Valuta ISO 4217: esattamente 3 lettere maiuscole */
 export function isoValuta(value: string | undefined, field: string): FieldError[] {
   return pattern(value, /^[A-Z]{3}$/, field, 'Codice valuta non valido (atteso ISO 4217, es. "EUR")');

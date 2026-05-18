@@ -16,6 +16,7 @@ import {
   numeroFattura,
   percentuale,
   positiveNumber,
+  numericField,
   enumValue,
 } from '../types.js';
 import { TIPO_DOCUMENTO, TIPO_RITENUTA, CAUSALE_PAGAMENTO, TIPO_CASSA } from '../enums.js';
@@ -27,8 +28,10 @@ function validateDatiRitenuta(r: DatiRitenuta, path: string): FieldError[] {
   errors.push(...required(r.TipoRitenuta, `${path}.TipoRitenuta`));
   errors.push(...enumValue(r.TipoRitenuta, TIPO_RITENUTA, `${path}.TipoRitenuta`));
   if (r.ImportoRitenuta === undefined) errors.push({ field: `${path}.ImportoRitenuta`, code: 'MISSING_REQUIRED_FIELD', message: 'Campo obbligatorio' });
+  errors.push(...numericField(r.ImportoRitenuta, 15, 2, `${path}.ImportoRitenuta`));
   if (r.AliquotaRitenuta === undefined) errors.push({ field: `${path}.AliquotaRitenuta`, code: 'MISSING_REQUIRED_FIELD', message: 'Campo obbligatorio' });
   errors.push(...percentuale(r.AliquotaRitenuta, `${path}.AliquotaRitenuta`));
+  errors.push(...numericField(r.AliquotaRitenuta, 6, 2, `${path}.AliquotaRitenuta`));
   errors.push(...required(r.CausalePagamento, `${path}.CausalePagamento`));
   errors.push(...enumValue(r.CausalePagamento, CAUSALE_PAGAMENTO, `${path}.CausalePagamento`));
   return errors;
@@ -40,6 +43,7 @@ function validateDatiBollo(b: DatiBollo, path: string): FieldError[] {
   const errors: FieldError[] = [];
   if (b.ImportoBollo === undefined) errors.push({ field: `${path}.ImportoBollo`, code: 'MISSING_REQUIRED_FIELD', message: 'Campo obbligatorio' });
   errors.push(...positiveNumber(b.ImportoBollo, `${path}.ImportoBollo`));
+  errors.push(...numericField(b.ImportoBollo, 15, 2, `${path}.ImportoBollo`));
   return errors;
 }
 
@@ -51,8 +55,12 @@ function validateDatiCassaPrevidenziale(c: DatiCassaPrevidenziale, path: string)
   errors.push(...enumValue(c.TipoCassa, TIPO_CASSA, `${path}.TipoCassa`));
   if (c.AlCassa === undefined) errors.push({ field: `${path}.AlCassa`, code: 'MISSING_REQUIRED_FIELD', message: 'Campo obbligatorio' });
   errors.push(...percentuale(c.AlCassa, `${path}.AlCassa`));
+  errors.push(...numericField(c.AlCassa, 6, 2, `${path}.AlCassa`));
   if (c.ImportoContributoCassa === undefined) errors.push({ field: `${path}.ImportoContributoCassa`, code: 'MISSING_REQUIRED_FIELD', message: 'Campo obbligatorio' });
+  errors.push(...numericField(c.ImportoContributoCassa, 15, 2, `${path}.ImportoContributoCassa`));
+  errors.push(...numericField(c.ImponibileCassa, 15, 2, `${path}.ImponibileCassa`));
   if (c.AliquotaIVA === undefined) errors.push({ field: `${path}.AliquotaIVA`, code: 'MISSING_REQUIRED_FIELD', message: 'Campo obbligatorio' });
+  errors.push(...numericField(c.AliquotaIVA, 6, 2, `${path}.AliquotaIVA`));
   if (c.AliquotaIVA === 0 && !c.Natura) errors.push({ field: `${path}.Natura`, code: 'MISSING_NATURA', message: 'Natura obbligatoria quando AliquotaIVA è 0' });
   errors.push(...maxLength(c.RiferimentoAmministrazione, 20, `${path}.RiferimentoAmministrazione`));
   return errors;
@@ -66,6 +74,8 @@ function validateScontoMaggiorazione(sm: ScontoMaggiorazione, path: string): Fie
     errors.push({ field: path, code: 'MISSING_REQUIRED_FIELD', message: 'Obbligatorio: Percentuale oppure Importo' });
   }
   errors.push(...percentuale(sm.Percentuale, `${path}.Percentuale`));
+  errors.push(...numericField(sm.Percentuale, 6, 2, `${path}.Percentuale`));
+  errors.push(...numericField(sm.Importo, 15, 8, `${path}.Importo`));
   return errors;
 }
 
@@ -128,6 +138,10 @@ export function validateDatiGenerali(dg: DatiGenerali, base: string): FieldError
   // ScontoMaggiorazione documento
   const sconti = dgd.ScontoMaggiorazione ? (Array.isArray(dgd.ScontoMaggiorazione) ? dgd.ScontoMaggiorazione : [dgd.ScontoMaggiorazione]) : [];
   sconti.forEach((sm, i) => errors.push(...validateScontoMaggiorazione(sm, `${p}.ScontoMaggiorazione[${i}]`)));
+
+  // ImportoTotaleDocumento e Arrotondamento
+  errors.push(...numericField(dgd.ImportoTotaleDocumento, 15, 2, `${p}.ImportoTotaleDocumento`));
+  errors.push(...numericField(dgd.Arrotondamento, 21, 8, `${p}.Arrotondamento`));
 
   // Documenti correlati
   const corrNames: Array<keyof typeof dg> = ['DatiOrdineAcquisto', 'DatiContratto', 'DatiConvenzione', 'DatiRicezione', 'DatiFattureCollegate'];
