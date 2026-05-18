@@ -1,6 +1,6 @@
 {
   "name": "fattura-elettronica-sdi-builder",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Builder TypeScript per la creazione e validazione di fatture elettroniche XML compatibili con il Sistema di Interscambio (SDI) — formato FatturaPA FPR12/FPA12",
   "main": "dist/index.js",
   "module": "dist/index.esm.js",
