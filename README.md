@@ -6,6 +6,18 @@ Supporta i formati **FPR12** (B2B/B2C) e **FPA12** (Pubblica Amministrazione) se
 
 ---
 
+## Feedback
+
+Questo progetto è in fase di sviluppo attivo. Se lo stai usando o valutando, qualsiasi feedback è benvenuto:
+
+- **Bug o comportamenti inattesi** → apri una [issue su GitHub](https://github.com/GiuseppeSerio/fattura-elettronica-sdi-builder/issues)
+- **Campi mancanti, regole SDI errate o casi d'uso non coperti** → stessa cosa, più è dettagliato meglio è
+- **Suggerimenti, idee o domande** → puoi scrivere direttamente a [gserio95@gmail.com](mailto:gserio95@gmail.com)
+
+Qualsiasi contributo — segnalazione, pull request o semplice opinione — è molto apprezzato.
+
+---
+
 ## Installazione
 
 ```bash
