@@ -1,20 +1,24 @@
 # fattura-elettronica-sdi-builder
 
+[![npm version](https://img.shields.io/npm/v/fattura-elettronica-sdi-builder)](https://www.npmjs.com/package/fattura-elettronica-sdi-builder)
+[![npm downloads](https://img.shields.io/npm/dm/fattura-elettronica-sdi-builder)](https://www.npmjs.com/package/fattura-elettronica-sdi-builder)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
+[![TypeScript strict](https://img.shields.io/badge/TypeScript-strict-blue)](https://www.typescriptlang.org/tsconfig#strict)
+
 Libreria TypeScript per la creazione e validazione di fatture elettroniche XML compatibili con il **Sistema di Interscambio (SDI)** dell'Agenzia delle Entrate italiana.
 
 Supporta i formati **FPR12** (B2B/B2C) e **FPA12** (Pubblica Amministrazione) secondo le specifiche tecniche FatturaPA v1.7.1.
 
 ---
 
-## Feedback
+## Why this library
 
-Questo progetto è in fase di sviluppo attivo. Se lo stai usando o valutando, qualsiasi feedback è benvenuto:
+Le alternative npm per la fatturazione elettronica italiana sono perlopiù porting da PHP, framework-specific (Angular/React) o non più mantenute. Questa libreria invece è:
 
-- **Bug o comportamenti inattesi** → apri una [issue su GitHub](https://github.com/GiuseppeSerio/fattura-elettronica-sdi-builder/issues)
-- **Campi mancanti, regole SDI errate o casi d'uso non coperti** → stessa cosa, più è dettagliato meglio è
-- **Suggerimenti, idee o domande** → puoi scrivere direttamente a [gserio95@gmail.com](mailto:gserio95@gmail.com)
-
-Qualsiasi contributo — segnalazione, pull request o semplice opinione — è molto apprezzato.
+- **TypeScript-first**, strict, con tipi pubblici completi per ogni campo del formato FatturaPA.
+- **Validazione cross-field** che restituisce i **codici errore SDI ufficiali** (00313, 00420, 00421, 00422, 00423, 00430, 00445, 00471/472/473/474/475/476).
+- **API `Result<T, E>`** ovunque: nessuna eccezione non gestita, controllo di flusso esplicito.
+- **Supporto completo** di FPR12 (B2B/B2C) e FPA12 (PA), di tutti i `TipoDocumento` da TD01 a TD29, e dei codici `Natura` aggiornati al 2021 (sottocodici N2.x / N3.x / N6.x).
 
 ---
 
@@ -23,6 +27,14 @@ Qualsiasi contributo — segnalazione, pull request o semplice opinione — è m
 ```bash
 npm install fattura-elettronica-sdi-builder
 ```
+
+---
+
+## Requirements
+
+- Node.js >= 18
+- TypeScript >= 5.0 (se usato con TS)
+- Funziona anche in progetti JavaScript puri, sia in CommonJS che in ESM
 
 ---
 
@@ -747,116 +759,32 @@ buildXml(fattura, {
 
 ---
 
-## Architettura
+## Contribuire
 
-```
-src/
-├── result.ts                 ← Result<T,E>, ok(), err()
-├── errors/
-│   ├── codes.ts              ← ErrorCode (const object)
-│   ├── FatturaError.ts       ← FatturaError | ValidationError | BuildError
-│   └── index.ts
-├── builder/
-│   ├── sections/             ← un modulo per blocco XML FatturaPA
-│   │   ├── trasmissione.ts
-│   │   ├── cedente.ts
-│   │   ├── cessionario.ts
-│   │   ├── dati-generali.ts
-│   │   ├── linee.ts
-│   │   ├── riepilogo.ts
-│   │   └── pagamento.ts
-│   ├── header.builder.ts
-│   ├── body.builder.ts
-│   └── index.ts              ← buildXml() → Result<string, BuildError>
-├── validator/
-│   ├── rules/                ← regole atomiche per sezione
-│   │   ├── types.ts          ← helpers: required(), maxLength(), pattern(), …
-│   │   ├── trasmissione.rules.ts
-│   │   ├── cedente.rules.ts
-│   │   ├── cessionario.rules.ts
-│   │   ├── body.rules.ts     ← orchestratore body
-│   │   └── body/             ← regole per sotto-sezioni body
-│   │       ├── dati-generali.rules.ts
-│   │       ├── linee.rules.ts
-│   │       ├── riepilogo.rules.ts
-│   │       ├── pagamento.rules.ts
-│   │       └── allegati.rules.ts
-│   ├── header.validator.ts   ← validateHeader() + cross-field CodiceDestinatario
-│   ├── body.validator.ts
-│   └── index.ts              ← validate() → Result<void, ValidationError>
-└── index.ts                  ← public API
-```
-
-### Funzioni helper di validazione (`validator/rules/types.ts`)
-
-| Helper | Codice errore | Descrizione |
-|---|---|---|
-| `required(v, field)` | `MISSING_REQUIRED_FIELD` | Valore assente, `null`, `undefined` o stringa vuota |
-| `maxLength(v, n, field)` | `EXCEEDS_MAX_LENGTH` | Stringa supera `n` caratteri |
-| `exactLength(v, n, field)` | `INVALID_LENGTH` | Stringa non è esattamente `n` caratteri |
-| `minMaxLength(v, min, max, field)` | `INVALID_LENGTH` | Lunghezza fuori dal range `[min, max]` |
-| `pattern(v, regex, field, msg)` | `INVALID_FORMAT` | Valore non corrisponde alla regex |
-| `dateFormat(v, field)` | `INVALID_DATE_FORMAT` | Non è `YYYY-MM-DD` |
-| `paese(v, field)` | `INVALID_FORMAT` | Non è `[A-Z]{2}` |
-| `partitaIvaIT(v, field)` | `INVALID_FORMAT` | Non è `\d{11}` |
-| `codiceFiscaleIT(v, field)` | `INVALID_FORMAT` | Non corrisponde al formato CF italiano |
-| `cap(v, field)` | `INVALID_FORMAT` | Non è `\d{5}` |
-| `provincia(v, field)` | `INVALID_FORMAT` | Non è `[A-Z]{2}` |
-| `iban(v, field)` | `INVALID_FORMAT` | Non rispetta il pattern IBAN |
-| `bic(v, field)` | `INVALID_FORMAT` | Non rispetta il pattern BIC/SWIFT |
-| `numeroFattura(v, field)` | `INVALID_FORMAT` | Supera 20 caratteri o contiene caratteri non ammessi |
-| `progressivoInvio(v, field)` | `INVALID_FORMAT` | Supera 10 caratteri o contiene caratteri non ammessi |
-| `isoValuta(v, field)` | `INVALID_FORMAT` | Non è `[A-Z]{3}` |
-| `positiveNumber(v, field)` | `INVALID_VALUE` | Numero ≤ 0 |
-| `nonNegativeNumber(v, field)` | `INVALID_VALUE` | Numero < 0 |
-| `percentuale(v, field)` | `INVALID_VALUE` | Fuori dal range `[0, 100]` |
-
-### Aggiungere una nuova regola di validazione
-
-```ts
-// src/validator/rules/cedente.rules.ts
-export function validateCedentePrestatore(cp: CedentePrestatore): FieldError[] {
-  const errors: FieldError[] = [];
-  // ... regole esistenti ...
-
-  // Nuova regola: email deve contenere @
-  if (cp.Contatti?.Email && !cp.Contatti.Email.includes('@')) {
-    errors.push({
-      field:   'CedentePrestatore.Contatti.Email',
-      code:    'INVALID_FORMAT',
-      message: 'Email non valida',
-    });
-  }
-
-  return errors;
-}
-```
-
-### Aggiungere un nuovo blocco XML
-
-```ts
-// src/builder/sections/mio-blocco.ts
-import type { XMLBuilder } from 'xmlbuilder2/lib/interfaces.js';
-
-export function buildMioBlocco(parent: XMLBuilder, data: MioBlocco): void {
-  const node = parent.ele('MioBlocco');
-  node.ele('Campo').txt(data.campo).up();
-  node.up();
-}
-```
-
-Poi importarlo e chiamarlo in `body.builder.ts`.
+Bug, regole SDI mancanti, nuovi blocchi XML: vedi [CONTRIBUTING.md](./CONTRIBUTING.md) per ambiente di sviluppo, esecuzione dei test, struttura interna del codice e linee guida per estendere validator e builder.
 
 ---
 
 ## Riferimenti
 
 - [Specifiche tecniche FatturaPA v1.7.1](https://www.fatturapa.gov.it/it/norme-e-regole/documentazione-fattura-elettronica/formato-fatturapa/)
-- [Schema XSD ufficiale](https://www.fatturapa.gov.it/it/norme-e-regole/documentazione-fattura-elettronica/formato-fatturapa/)
-- [Tabella codici SDI](https://www.fatturapa.gov.it/it/norme-e-regole/documentazione-fattura-elettronica/formato-fatturapa/)
+- [Schema XSD ufficiale (download diretto)](https://www.fatturapa.gov.it/it/norme-e-regole/documentazione-fattura-elettronica/formato-fatturapa/)
+- [Errori SDI — tabella codici ufficiali](https://www.fatturapa.gov.it/it/norme-e-regole/documentazione-fattura-elettronica/)
 
 ---
 
 ## Licenza
 
 MIT
+
+---
+
+## Feedback
+
+Questo progetto è in fase di sviluppo attivo. Se lo stai usando o valutando, qualsiasi feedback è benvenuto:
+
+- **Bug o comportamenti inattesi** → apri una [issue su GitHub](https://github.com/GiuseppeSerio/fattura-elettronica-sdi-builder/issues)
+- **Campi mancanti, regole SDI errate o casi d'uso non coperti** → stessa cosa, più è dettagliato meglio è
+- **Suggerimenti, idee o domande** → puoi scrivere direttamente a [gserio95@gmail.com](mailto:gserio95@gmail.com)
+
+Qualsiasi contributo — segnalazione, pull request o semplice opinione — è molto apprezzato.

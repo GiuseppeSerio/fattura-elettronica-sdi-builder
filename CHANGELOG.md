@@ -5,7 +5,62 @@ Il formato segue [Keep a Changelog](https://keepachangelog.com/it/1.0.0/) e il p
 
 ---
 
-## [Unreleased]
+## [0.1.3] — 2026-05-29
+
+### Aggiunto
+- **Suite di test riorganizzata in test-pyramid** (188 test totali, 15 suite):
+  - `__tests__/unit/` — funzioni pure isolate (57 test)
+  - `__tests__/integration/` — singolo modulo end-to-end, mirror di `src/validator/rules/` (61 test)
+  - `__tests__/e2e/` — pipeline completa, scenari realistici + regressions (70 test)
+  - `__tests__/fixtures/` e `__tests__/helpers/` con builder (`headerIT()`, `linea()`, `riep()`, `pagamento()`, `bodyStd()`, `fattura()`, `expectOk()`, `expectErr()`) e asserzioni condivise
+- **Script `npm` per livello**: `test:unit`, `test:integration`, `test:e2e` (oltre a `test` complessivo); `test:watch` ora limita a unit+integration per velocità
+- **Test integration per `applyDefaults()`** (10 test) — colmato gap totalmente scoperto
+- **Enum centralizzati in `src/enums.ts`** come singola fonte di verità (12 enum: `FORMATO_TRASMISSIONE`, `REGIME_FISCALE`, `TIPO_DOCUMENTO`, `TIPO_RITENUTA`, `TIPO_CASSA`, `CAUSALE_PAGAMENTO`, `TIPO_CESSIONE_PRESTAZIONE`, `NATURA`, `NATURA_DEPRECATA`, `ESIGIBILITA_IVA`, `MODALITA_PAGAMENTO`, `CONDIZIONI_PAGAMENTO`), esportati pubblicamente in `src/index.ts`
+- **Validazione enum `NATURA`** runtime su `DettaglioLinee.Natura`, `DatiRiepilogo.Natura`, `DatiCassaPrevidenziale.Natura` (prima nessun controllo sui codici)
+- **Validazione enum `EsigibilitaIVA`** (era dichiarata ma `enumValue` mai chiamato)
+- **Cross-check date**:
+  - `DataScadenzaPagamento` ≥ `Data` del documento
+  - `DataDDT` ≤ `Data` del documento
+- **Unicità `Numero` fattura** all'interno di un lotto multi-body
+- **Unicità `DatiRiepilogo`** per coppia `(AliquotaIVA, Natura, EsigibilitaIVA)`
+- **Validazione calendaristica delle date**: `2026-02-31` o `2026-13-01` ora rilevate come inesistenti, non solo verificate per pattern
+- **Validazione formato base64** per `Allegati.Attachment`
+- **Validazione `GiorniTerminiPagamento ≥ 0`**
+- **Lotto vuoto rilevato**: `FatturaElettronicaBody = []` ora emette `EMPTY_COLLECTION`
+- **Documento `CONTRIBUTING.md`** con setup, architettura, helper di validazione, guida per aggiungere regole e blocchi XML
+- **README rinnovato**: badge npm/license/TS strict, sezione "Why this library", "Requirements"
+
+### Modificato
+- **`validator/rules/` riorganizzato per simmetria header/body**:
+  - Nuova cartella `rules/header/` contenente `trasmissione.rules.ts`, `cedente.rules.ts`, `cessionario.rules.ts`
+  - Nuovo `rules/header.rules.ts` per le cross-rules dell'header (`validateCodiceDestinatario` estratta da `header.validator.ts`)
+  - `header.validator.ts` torna a essere orchestratore puro (11 righe, prima 65)
+- **`numericField`** ora arrotonda il valore a `maxDecimals` prima del confronto, distinguendo rumore floating-point da decimali reali tramite soglia epsilon-relativa
+- **`dateFormat`** ora valida anche la semantica calendaristica via `new Date(value+'T00:00:00Z')` + round-trip `toISOString()`
+- **Tolleranze coherence-check ora float-robust** (arrotondamento della differenza a 2 decimali prima del confronto): `PrezzoTotale` (SDI 00423), `Imposta`, `ImponibileImporto` (SDI 00422), `ImportoTotaleDocumento`
+- **CAP estero** ammette fino a 10 caratteri (era max 5): supporta UK `SW1A1AA`, CA `K1A0B1`, ecc.
+- `types/common.ts` ora re-esporta i type literal da `src/enums.ts` (eliminata la duplicazione fra type e runtime)
+
+### Risolto
+- `NaN` e `Infinity` in qualsiasi campo numerico ora rifiutati esplicitamente (es. `PrezzoUnitario=NaN`, `ImportoPagamento=NaN`) — prima passavano silenziosamente
+- Valori float derivati da somma (`0.1 + 0.2 = 0.30000000000000004`) non generano più falsi positivi di "17 decimali" su campi con `maxDecimals` ≤ 8
+- Tolleranza `PrezzoTotale` al limite (`Math.abs(100.01 - 100) = 0.010000000000005`) non emette più falso negativo SDI 00423
+- `AliquotaIVA` negativa in `DatiRiepilogo` ora rilevata (prima controllata solo in `DettaglioLinee`)
+- `Natura` con codice inesistente (`'XYZ'`) ora rifiutata (prima nessun controllo enum)
+- `EsigibilitaIVA = 'X'` ora rifiutata
+- `Numero` fattura duplicato all'interno di un lotto multi-body ora rilevato
+- `DatiRiepilogo` con stessa coppia `(AliquotaIVA, Natura, EsigibilitaIVA)` ripetuta ora rilevato
+- Date impossibili come `2026-02-31` o `2026-13-01` ora rilevate (prima superavano il check pattern)
+- `Allegati.Attachment` con caratteri non-base64 ora rifiutato
+- `GiorniTerminiPagamento` negativo ora rilevato
+- CAP esteri di 7 caratteri (UK) non più rifiutati come "troppo lunghi"
+- `DataScadenzaPagamento` precedente alla `Data` del documento ora rilevata
+- `DataDDT` successiva alla `Data` del documento ora rilevata
+- Lotto vuoto `FatturaElettronicaBody = []` ora rilevato come `EMPTY_COLLECTION`
+
+---
+
+## [0.1.2] — 2026-05-27
 
 ### Aggiunto
 - **Controlli coerenza importi**:
