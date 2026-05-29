@@ -1,7 +1,7 @@
 import type { DatiPagamento } from '../../../types/index.js';
 import type { FieldError } from '../../../errors/index.js';
 import { required, maxLength, dateFormat, iban, bic, pattern, numericField, enumValue } from '../types.js';
-import { MODALITA_PAGAMENTO, CONDIZIONI_PAGAMENTO } from '../enums.js';
+import { MODALITA_PAGAMENTO, CONDIZIONI_PAGAMENTO } from '../../../enums.js';
 
 /** ABI e CAB: esattamente 5 cifre */
 function abiCab(value: string | undefined, field: string): FieldError[] {
@@ -32,6 +32,10 @@ export function validateDatiPagamento(dp: DatiPagamento, path: string): FieldErr
     errors.push(...numericField(det.ImportoPagamento, 15, 2, `${p}.ImportoPagamento`));
     errors.push(...numericField(det.ScontoPagamentoAnticipato, 15, 2, `${p}.ScontoPagamentoAnticipato`));
     errors.push(...numericField(det.PenalitaPagamentiRitardati, 15, 2, `${p}.PenalitaPagamentiRitardati`));
+
+    if (det.GiorniTerminiPagamento !== undefined && det.GiorniTerminiPagamento < 0) {
+      errors.push({ field: `${p}.GiorniTerminiPagamento`, code: 'INVALID_VALUE', message: 'GiorniTerminiPagamento non può essere negativo' });
+    }
 
     errors.push(...maxLength(det.Beneficiario, 200, `${p}.Beneficiario`));
     errors.push(...dateFormat(det.DataRiferimentoTerminiPagamento, `${p}.DataRiferimentoTerminiPagamento`));

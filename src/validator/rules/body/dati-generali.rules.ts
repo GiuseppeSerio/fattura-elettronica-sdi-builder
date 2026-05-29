@@ -19,7 +19,7 @@ import {
   numericField,
   enumValue,
 } from '../types.js';
-import { TIPO_DOCUMENTO, TIPO_RITENUTA, CAUSALE_PAGAMENTO, TIPO_CASSA } from '../enums.js';
+import { TIPO_DOCUMENTO, TIPO_RITENUTA, CAUSALE_PAGAMENTO, TIPO_CASSA, NATURA } from '../../../enums.js';
 
 // ---- DatiRitenuta ----------------------------------------------------------
 
@@ -62,6 +62,7 @@ function validateDatiCassaPrevidenziale(c: DatiCassaPrevidenziale, path: string)
   if (c.AliquotaIVA === undefined) errors.push({ field: `${path}.AliquotaIVA`, code: 'MISSING_REQUIRED_FIELD', message: 'Campo obbligatorio' });
   errors.push(...numericField(c.AliquotaIVA, 6, 2, `${path}.AliquotaIVA`));
   if (c.AliquotaIVA === 0 && !c.Natura) errors.push({ field: `${path}.Natura`, code: 'MISSING_NATURA', message: 'Natura obbligatoria quando AliquotaIVA è 0' });
+  errors.push(...enumValue(c.Natura, NATURA, `${path}.Natura`));
   errors.push(...maxLength(c.RiferimentoAmministrazione, 20, `${path}.RiferimentoAmministrazione`));
   return errors;
 }

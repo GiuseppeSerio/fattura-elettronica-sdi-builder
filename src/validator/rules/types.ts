@@ -69,6 +69,13 @@ export function dateFormat(value: string | undefined, field: string): FieldError
   if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) {
     return [{ field, code: 'INVALID_DATE_FORMAT', message: 'Formato data non valido (atteso YYYY-MM-DD)' }];
   }
+  // Validazione semantica: la data deve esistere nel calendario.
+  // Il round-trip via toISOString cattura sia le date impossibili (Invalid Date)
+  // sia quelle normalizzate silenziosamente (es. 2026-02-31 → 2026-03-03).
+  const dt = new Date(value + 'T00:00:00Z');
+  if (isNaN(dt.getTime()) || dt.toISOString().slice(0, 10) !== value) {
+    return [{ field, code: 'INVALID_DATE_FORMAT', message: `Data inesistente nel calendario: ${value}` }];
+  }
   return [];
 }
 
@@ -156,24 +163,30 @@ export function numericField(
 ): FieldError[] {
   if (value === undefined) return [];
   const errors: FieldError[] = [];
-  const s = String(Math.abs(value));
 
-  if (s.includes('e') || s.includes('E')) {
-    errors.push({ field, code: 'INVALID_FORMAT', message: 'Valore non valido (notazione scientifica non ammessa)' });
-    return errors;
+  if (!Number.isFinite(value)) {
+    return [{ field, code: 'INVALID_VALUE', message: 'Valore numerico non valido (NaN o Infinity non ammessi)' }];
   }
 
-  const dotIdx = s.indexOf('.');
-  const decCount = dotIdx === -1 ? 0 : s.length - dotIdx - 1;
-
-  if (decCount > maxDecimals) {
+  // Arrotonda a maxDecimals per filtrare il "rumore" floating-point (es. 0.1+0.2 = 0.30000000000000004).
+  // Confrontiamo l'errore relativo: se è dell'ordine dell'epsilon macchina, è rumore; altrimenti
+  // il valore ha davvero più decimali del consentito.
+  const factor = 10 ** maxDecimals;
+  const rounded = Math.round(value * factor) / factor;
+  const diff = Math.abs(value - rounded);
+  const relativeNoise = Math.abs(value) * 1e-12 + 1e-12;
+  if (diff > relativeNoise) {
     errors.push({ field, code: 'INVALID_FORMAT', message: `Massimo ${maxDecimals} cifre decimali` });
   }
 
-  // Lunghezza XML: segno (se negativo) + parte intera + '.' + max(2, decEffettive)
+  // Per il check di lunghezza XML, usiamo il valore arrotondato (è quello che il builder
+  // serializza con .toFixed(N)).
+  const s = String(Math.abs(rounded));
+  const dotIdx = s.indexOf('.');
+  const decCount = dotIdx === -1 ? 0 : s.length - dotIdx - 1;
   const intLen = dotIdx === -1 ? s.length : dotIdx;
   const decFormatted = Math.max(2, Math.min(decCount, maxDecimals));
-  const signLen = value < 0 ? 1 : 0;
+  const signLen = rounded < 0 ? 1 : 0;
   const totalLen = signLen + intLen + 1 + decFormatted;
 
   if (totalLen > maxChars) {

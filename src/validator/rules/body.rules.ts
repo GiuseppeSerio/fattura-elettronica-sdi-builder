@@ -13,6 +13,58 @@ function round2(n: number): number {
 }
 
 
+function validateCrossDates(body: FatturaElettronicaBody, base: string): FieldError[] {
+  const errors: FieldError[] = [];
+  const dataDoc = body.DatiGenerali.DatiGeneraliDocumento.Data;
+  if (!dataDoc || !/^\d{4}-\d{2}-\d{2}$/.test(dataDoc)) return errors;
+
+  // DataDDT non può essere successiva alla Data del documento (DDT precede sempre la fatturazione)
+  body.DatiGenerali.DatiDDT?.forEach((ddt, i) => {
+    if (ddt.DataDDT && /^\d{4}-\d{2}-\d{2}$/.test(ddt.DataDDT) && ddt.DataDDT > dataDoc) {
+      errors.push({
+        field: `${base}.DatiGenerali.DatiDDT[${i}].DataDDT`,
+        code: 'INVALID_VALUE',
+        message: `DataDDT (${ddt.DataDDT}) non può essere successiva alla Data del documento (${dataDoc})`,
+      });
+    }
+  });
+
+  // DataScadenzaPagamento non può essere precedente alla Data del documento
+  body.DatiPagamento?.forEach((dp, i) => {
+    dp.DettaglioPagamento.forEach((det, j) => {
+      if (det.DataScadenzaPagamento && /^\d{4}-\d{2}-\d{2}$/.test(det.DataScadenzaPagamento)
+          && det.DataScadenzaPagamento < dataDoc) {
+        errors.push({
+          field: `${base}.DatiPagamento[${i}].DettaglioPagamento[${j}].DataScadenzaPagamento`,
+          code: 'INVALID_VALUE',
+          message: `DataScadenzaPagamento (${det.DataScadenzaPagamento}) non può essere precedente alla Data del documento (${dataDoc})`,
+        });
+      }
+    });
+  });
+
+  return errors;
+}
+
+function validateRiepilogoUniqueness(body: FatturaElettronicaBody, base: string): FieldError[] {
+  const errors: FieldError[] = [];
+  const seen = new Map<string, number>();
+  body.DatiBeniServizi.DatiRiepilogo.forEach((r, i) => {
+    const key = `${r.AliquotaIVA}|${r.Natura ?? ''}|${r.EsigibilitaIVA ?? ''}`;
+    const prev = seen.get(key);
+    if (prev !== undefined) {
+      errors.push({
+        field: `${base}.DatiBeniServizi.DatiRiepilogo[${i}]`,
+        code: 'INVALID_VALUE',
+        message: `Riepilogo IVA duplicato: stessa combinazione AliquotaIVA/Natura/EsigibilitaIVA già presente a riga [${prev}]`,
+      });
+    } else {
+      seen.set(key, i);
+    }
+  });
+  return errors;
+}
+
 function validateAmounts(body: FatturaElettronicaBody, base: string): FieldError[] {
   const errors: FieldError[] = [];
   const dgd = body.DatiGenerali.DatiGeneraliDocumento;
@@ -40,7 +92,8 @@ function validateAmounts(body: FatturaElettronicaBody, base: string): FieldError
 
   const attesoImponibile = round2(totaleLinee + totaleCassa + totaleSpeseAcc + totaleArrotRiepilogo);
 
-  if (Math.abs(totaleImponibile - attesoImponibile) > AMOUNT_TOLERANCE) {
+  const diffImponibile = Math.round(Math.abs(totaleImponibile - attesoImponibile) * 100) / 100;
+  if (diffImponibile > AMOUNT_TOLERANCE) {
     errors.push({
       field: `${base}.DatiBeniServizi.DatiRiepilogo`,
       code: 'INVALID_VALUE',
@@ -63,7 +116,8 @@ function validateAmounts(body: FatturaElettronicaBody, base: string): FieldError
 
     const atteso = round2(totaleRiepilogo - totaleRitenuta + bollo + arrotDoc);
 
-    if (Math.abs(dgd.ImportoTotaleDocumento - atteso) > AMOUNT_TOLERANCE) {
+    const diffTotale = Math.round(Math.abs(dgd.ImportoTotaleDocumento - atteso) * 100) / 100;
+    if (diffTotale > AMOUNT_TOLERANCE) {
       errors.push({
         field: `${base}.DatiGenerali.DatiGeneraliDocumento.ImportoTotaleDocumento`,
         code: 'INVALID_VALUE',
@@ -82,6 +136,8 @@ export function validateBody(body: FatturaElettronicaBody, index: number): Field
     ...validateDatiGenerali(body.DatiGenerali, base),
     ...validateDettaglioLinee(body.DatiBeniServizi.DettaglioLinee, base),
     ...validateDatiRiepilogo(body.DatiBeniServizi.DatiRiepilogo, base),
+    ...validateRiepilogoUniqueness(body, base),
+    ...validateCrossDates(body, base),
     ...validateAmounts(body, base),
     ...(body.DatiVeicoli ? validateDatiVeicoli(body.DatiVeicoli, base) : []),
     ...(body.DatiPagamento ?? []).flatMap((dp, i) =>

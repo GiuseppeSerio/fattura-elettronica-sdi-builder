@@ -1,22 +1,29 @@
 import type { DatiRiepilogo } from '../../../types/index.js';
 import type { FieldError } from '../../../errors/index.js';
-import { maxLength, numericField } from '../types.js';
-import { NATURA_DEPRECATA } from '../enums.js';
+import { maxLength, numericField, enumValue } from '../types.js';
+import { NATURA, NATURA_DEPRECATA, ESIGIBILITA_IVA } from '../../../enums.js';
 
 const TOLERANCE = 0.01; // tolleranza arrotondamento
 
+/** Confronto tollerante al rumore floating-point: arrotonda la differenza a 2 decimali. */
+function diffEntro(a: number, b: number, tol: number): boolean {
+  const diff = Math.round(Math.abs(a - b) * 100) / 100;
+  return diff <= tol;
+}
+
 function isImpostaCoerente(r: DatiRiepilogo): boolean {
   // Se Natura è impostata l'imposta deve essere 0
-  if (r.Natura) return Math.abs(r.Imposta) <= TOLERANCE;
+  if (r.Natura) return diffEntro(r.Imposta, 0, TOLERANCE);
   // Altrimenti: Imposta ≈ ImponibileImporto * AliquotaIVA / 100
   const expected = Math.round((r.ImponibileImporto * r.AliquotaIVA) / 100 * 100) / 100;
-  return Math.abs(r.Imposta - expected) <= TOLERANCE;
+  return diffEntro(r.Imposta, expected, TOLERANCE);
 }
 
 function validateSingoloRiepilogo(r: DatiRiepilogo, path: string): FieldError[] {
   const errors: FieldError[] = [];
 
   if (r.AliquotaIVA === undefined)       errors.push({ field: `${path}.AliquotaIVA`,       code: 'MISSING_REQUIRED_FIELD', message: 'Campo obbligatorio' });
+  else if (r.AliquotaIVA < 0)            errors.push({ field: `${path}.AliquotaIVA`,       code: 'INVALID_VALUE',           message: 'AliquotaIVA non può essere negativa' });
   errors.push(...numericField(r.AliquotaIVA, 6, 2, `${path}.AliquotaIVA`));
   if (r.ImponibileImporto === undefined)  errors.push({ field: `${path}.ImponibileImporto`, code: 'MISSING_REQUIRED_FIELD', message: 'Campo obbligatorio' });
   errors.push(...numericField(r.ImponibileImporto, 15, 2, `${path}.ImponibileImporto`));
@@ -28,6 +35,9 @@ function validateSingoloRiepilogo(r: DatiRiepilogo, path: string): FieldError[] 
   if (r.AliquotaIVA === 0 && !r.Natura) {
     errors.push({ field: `${path}.Natura`, code: 'MISSING_NATURA', message: 'Natura obbligatoria quando AliquotaIVA è 0' });
   }
+
+  errors.push(...enumValue(r.Natura, NATURA, `${path}.Natura`));
+  errors.push(...enumValue(r.EsigibilitaIVA, ESIGIBILITA_IVA, `${path}.EsigibilitaIVA`));
 
   // Natura presente → AliquotaIVA deve essere 0 (SDI 00430)
   if (r.Natura !== undefined && r.AliquotaIVA !== undefined && r.AliquotaIVA !== 0) {

@@ -1,7 +1,7 @@
 import type { DettaglioLinee, ScontoMaggiorazione } from '../../../types/index.js';
 import type { FieldError } from '../../../errors/index.js';
 import { required, maxLength, dateFormat, percentuale, numericField, enumValue } from '../types.js';
-import { TIPO_CESSIONE_PRESTAZIONE, NATURA_DEPRECATA } from '../enums.js';
+import { TIPO_CESSIONE_PRESTAZIONE, NATURA, NATURA_DEPRECATA } from '../../../enums.js';
 
 const PRICE_TOLERANCE = 0.01; // ±1 centesimo (SDI 00423)
 
@@ -84,12 +84,17 @@ function validateSingolaLinea(linea: DettaglioLinee, path: string): FieldError[]
   }
   if (linea.PrezzoTotale !== undefined && linea.PrezzoUnitario !== undefined && linea.Quantita !== undefined) {
     const atteso = calcolaPrezzoTotaleAtteso(linea);
-    if (atteso !== undefined && Math.abs(linea.PrezzoTotale - atteso) > PRICE_TOLERANCE) {
-      errors.push({
-        field: `${path}.PrezzoTotale`,
-        code: 'INVALID_VALUE',
-        message: `PrezzoTotale non coerente: atteso ${atteso}, ricevuto ${linea.PrezzoTotale} (tolleranza ±${PRICE_TOLERANCE}, SDI 00423)`,
-      });
+    // Arrotondiamo la differenza a 2 decimali per filtrare rumore floating-point
+    // (es. 100.01 - 100 produce 0.010000000000005 in float).
+    if (atteso !== undefined) {
+      const diff = Math.round(Math.abs(linea.PrezzoTotale - atteso) * 100) / 100;
+      if (diff > PRICE_TOLERANCE) {
+        errors.push({
+          field: `${path}.PrezzoTotale`,
+          code: 'INVALID_VALUE',
+          message: `PrezzoTotale non coerente: atteso ${atteso}, ricevuto ${linea.PrezzoTotale} (tolleranza ±${PRICE_TOLERANCE}, SDI 00423)`,
+        });
+      }
     }
   }
 
@@ -106,6 +111,7 @@ function validateSingolaLinea(linea: DettaglioLinee, path: string): FieldError[]
   if (linea.Natura !== undefined && linea.AliquotaIVA !== undefined && linea.AliquotaIVA !== 0) {
     errors.push({ field: `${path}.AliquotaIVA`, code: 'INVALID_VALUE', message: 'Se Natura è valorizzata, AliquotaIVA deve essere 0 (SDI 00401)' });
   }
+  errors.push(...enumValue(linea.Natura, NATURA, `${path}.Natura`));
   // Codici Natura N2, N3, N6 deprecati dal 2021 — richiedono sottocodice
   if (linea.Natura && NATURA_DEPRECATA.has(linea.Natura)) {
     errors.push({ field: `${path}.Natura`, code: 'INVALID_VALUE', message: `Codice Natura "${linea.Natura}" non valido dal 2021: usare il sottocodice (es. N2.1, N3.1, N6.1) (SDI 00445)` });
