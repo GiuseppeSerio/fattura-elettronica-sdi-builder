@@ -1,7 +1,7 @@
-import { validate } from '../src/validator/index';
-import { ValidationError } from '../src/errors/index';
-import { fatturaB2B } from './fixtures';
-import type { FatturaElettronica } from '../src/types/index';
+import { validate } from '../../src/validator/index';
+import { ValidationError } from '../../src/errors/index';
+import { fatturaB2B } from '../fixtures/fattura-b2b';
+import type { FatturaElettronica } from '../../src/types/index';
 
 describe('validate()', () => {
   it('ritorna ok per una fattura B2B corretta', () => {

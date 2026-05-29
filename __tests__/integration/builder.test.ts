@@ -1,6 +1,6 @@
-import { buildXml } from '../src/builder/index';
-import { BuildError } from '../src/errors/index';
-import { fatturaB2B } from './fixtures';
+import { buildXml } from '../../src/builder/index';
+import { BuildError } from '../../src/errors/index';
+import { fatturaB2B } from '../fixtures/fattura-b2b';
 
 describe('buildXml()', () => {
   it('ritorna ok con XML valido', () => {

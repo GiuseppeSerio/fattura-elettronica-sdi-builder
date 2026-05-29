@@ -1,4 +1,4 @@
-import type { FatturaElettronica } from '../src/types/index.js';
+import type { FatturaElettronica } from '../../src/types/index.js';
 
 export const fatturaB2B: FatturaElettronica = {
   FatturaElettronicaHeader: {

@@ -3,7 +3,7 @@ import {
   pattern, dateFormat,
   paese, partitaIvaIT, codiceFiscaleIT, cap, provincia,
   iban, bic, numeroFattura, codiceDestinatario, progressivoInvio,
-} from '../src/validator/rules/types';
+} from '../../src/validator/rules/types';
 
 const f = 'TestField';
 
