@@ -16,6 +16,22 @@ export type { Result } from './result.js';
 export { FatturaError, ValidationError, BuildError, ErrorCode } from './errors/index.js';
 export type { FieldError } from './errors/index.js';
 
+// Enum runtime (utili per dropdown UI, validazioni custom, iterazione)
+export {
+  FORMATO_TRASMISSIONE,
+  REGIME_FISCALE,
+  TIPO_DOCUMENTO,
+  TIPO_RITENUTA,
+  TIPO_CASSA,
+  CAUSALE_PAGAMENTO,
+  TIPO_CESSIONE_PRESTAZIONE,
+  NATURA,
+  NATURA_DEPRECATA,
+  ESIGIBILITA_IVA,
+  MODALITA_PAGAMENTO,
+  CONDIZIONI_PAGAMENTO,
+} from './enums.js';
+
 // Types
 export type {
   FatturaElettronica,

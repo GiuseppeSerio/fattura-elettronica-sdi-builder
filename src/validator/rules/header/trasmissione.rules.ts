@@ -1,12 +1,12 @@
-import type { DatiTrasmissione } from '../../types/index.js';
-import type { FieldError } from '../../errors/index.js';
+import type { DatiTrasmissione } from '../../../types/index.js';
+import type { FieldError } from '../../../errors/index.js';
 import {
   required,
   paese,
   maxLength,
   progressivoInvio,
   pattern,
-} from './types.js';
+} from '../types.js';
 
 const BASE = 'FatturaElettronicaHeader.DatiTrasmissione';
 

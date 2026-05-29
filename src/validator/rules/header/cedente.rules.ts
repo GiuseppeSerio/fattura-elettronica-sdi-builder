@@ -1,5 +1,5 @@
-import type { CedentePrestatore, Indirizzo } from '../../types/index.js';
-import type { FieldError } from '../../errors/index.js';
+import type { CedentePrestatore, Indirizzo } from '../../../types/index.js';
+import type { FieldError } from '../../../errors/index.js';
 import {
   required,
   maxLength,
@@ -10,8 +10,8 @@ import {
   provincia,
   pattern,
   enumValue,
-} from './types.js';
-import { REGIME_FISCALE } from './enums.js';
+} from '../types.js';
+import { REGIME_FISCALE } from '../../../enums.js';
 
 const BASE = 'FatturaElettronicaHeader.CedentePrestatore';
 
@@ -24,11 +24,11 @@ function validateIndirizzo(sede: Indirizzo, path: string): FieldError[] {
   errors.push(...maxLength(sede.NumeroCivico, 8, `${path}.NumeroCivico`));
 
   errors.push(...required(sede.CAP, `${path}.CAP`));
-  // CAP: 5 cifre solo per nazione IT — per l'estero il formato è libero
+  // CAP: 5 cifre solo per nazione IT — per l'estero formato libero (UK SW1A1AA, CA K1A0B1, ecc.)
   if (sede.Nazione === 'IT') {
     errors.push(...cap(sede.CAP, `${path}.CAP`));
   } else {
-    errors.push(...maxLength(sede.CAP, 5, `${path}.CAP`));
+    errors.push(...maxLength(sede.CAP, 10, `${path}.CAP`));
   }
 
   errors.push(...required(sede.Comune, `${path}.Comune`));

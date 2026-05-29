@@ -1,5 +1,5 @@
-import type { CessionarioCommittente } from '../../types/index.js';
-import type { FieldError } from '../../errors/index.js';
+import type { CessionarioCommittente } from '../../../types/index.js';
+import type { FieldError } from '../../../errors/index.js';
 import {
   required,
   maxLength,
@@ -7,7 +7,7 @@ import {
   partitaIvaIT,
   codiceFiscaleIT,
   pattern,
-} from './types.js';
+} from '../types.js';
 import { validateIndirizzo } from './cedente.rules.js';
 
 const BASE = 'FatturaElettronicaHeader.CessionarioCommittente';
